@@ -1,0 +1,82 @@
+/* 全局设置 */
+body { 
+    background-color: #0a0a0a; 
+    color: #e5e5e5; 
+    font-family: 'Manrope', sans-serif; 
+}
+.font-serif-display { 
+    font-family: 'Cinzel', serif; 
+}
+::-webkit-scrollbar { 
+    width: 0px; 
+}
+
+/* 封面卡片交互 */
+.card {
+    position: relative;
+    z-index: 10; /* 确保层级高于背景 */
+}
+
+.cover-image {
+    filter: grayscale(100%) contrast(1.1) brightness(0.9);
+    transition: all 0.8s cubic-bezier(0.2, 1, 0.3, 1);
+    transform: scale(1.0);
+    will-change: transform, filter;
+}
+
+.card:hover .cover-image, .card.active .cover-image {
+    filter: grayscale(0%) contrast(1) brightness(1);
+    transform: scale(1.03);
+}
+
+.card.active .cover-container {
+    box-shadow: 0 25px 50px -12px rgba(255, 255, 255, 0.15);
+}
+
+/* 沉浸模式：强制显隐逻辑 (解决透明层遮挡问题) */
+#immersive-overlay.opacity-0 {
+    visibility: hidden;
+    transition: opacity 1s ease, visibility 0s linear 1s; /* 等透明度变为0后再隐藏 DOM */
+}
+
+#immersive-overlay.opacity-100 {
+    visibility: visible;
+    transition: opacity 1s ease, visibility 0s;
+}
+
+/* 沉浸模式：切歌时的呼吸过渡 */
+#immersive-cover, 
+#immersive-title, 
+#immersive-artist {
+    transition: opacity 0.5s ease-in-out, filter 0.8s ease; 
+}
+
+/* 确保封面初始是不透明的 */
+#immersive-cover {
+    opacity: 1;
+}
+
+/* 动画定义 */
+.fade-in-up { 
+    animation: fadeInUp 1.2s cubic-bezier(0.2, 1, 0.3, 1) forwards; 
+    opacity: 0; 
+    transform: translateY(20px); 
+}
+
+.fade-in-left { 
+    animation: fadeIn 1.5s ease-out forwards; 
+    opacity: 0; 
+}
+
+.fade-in-right { 
+    animation: fadeIn 1.5s ease-out forwards; 
+    opacity: 0; 
+}
+
+@keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
