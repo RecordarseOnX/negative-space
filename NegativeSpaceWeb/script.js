@@ -45,8 +45,10 @@ const immersiveArtist = document.getElementById('immersive-artist');
 const immersivePlayIcon = document.getElementById('immersive-play-icon');
 
 let currentSongId = null;
-let isSwitching = false; // 切歌锁
+let isSwitching = false; 
 
+// [新增] 待播放列表 (洗牌池)
+let shuffleQueue = []; 
 // ==========================================
 // 🚀 初始化与渲染
 // ==========================================
@@ -190,18 +192,35 @@ function togglePlay() {
 
 // 随机播放下一首
 function playRandomNext() {
+    // 1. 如果只有一首歌，直接循环
     if (playlist.length <= 1) {
         audio.currentTime = 0;
         safePlay();
         return;
     }
 
-    let nextId;
-    do {
-        const randomIndex = Math.floor(Math.random() * playlist.length);
-        nextId = playlist[randomIndex].id;
-    } while (nextId === currentSongId);
+    // 2. 如果池子空了，重新填满
+    if (shuffleQueue.length === 0) {
+        // 获取所有歌曲 ID
+        const allIds = playlist.map(s => s.id);
+        
+        // 过滤掉当前正在放的这首，避免上一轮刚结束，下一轮立马又随到它
+        // (例如：A -> B -> C -> [重置] -> C -> A ...)
+        shuffleQueue = allIds.filter(id => id !== currentSongId);
+        
+        console.log("🔄 播放列表已重置，新一轮循环开始");
+    }
 
+    // 3. 从池子中随机抽取一个索引
+    const randomIndex = Math.floor(Math.random() * shuffleQueue.length);
+    const nextId = shuffleQueue[randomIndex];
+
+    // 4. 从池子中移除这个 ID (确保这一轮不会再播它)
+    shuffleQueue.splice(randomIndex, 1);
+
+    console.log(`🔀 即将播放 ID: ${nextId}, 本轮剩余: ${shuffleQueue.length} 首`);
+
+    // 5. 播放
     loadAndPlay(nextId);
 }
 
@@ -293,6 +312,42 @@ function updateImmersivePlayState(isPlaying) {
         immersivePlayIcon.classList.remove('opacity-0');
         immersiveCover.classList.add('grayscale');
     }
+}
+
+// ==========================================
+// 👁️ 标签页图标自动变色 (Favicon Auto-Switch)
+// ==========================================
+
+// 1. 定义两个图标的 Data URI
+// 黑色图标 (聚焦时使用) - fill=%23000000
+const faviconBlack = "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path fill=%22%23000000%22 d=%22M20 5h30v45L20 95z%22/><path fill=%22%23000000%22 d=%22M80 95H50V50L80 5z%22/></svg>";
+
+// 白色图标 (离开时使用) - fill=%23ffffff
+const faviconWhite = "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path fill=%22%23ffffff%22 d=%22M20 5h30v45L20 95z%22/><path fill=%22%23ffffff%22 d=%22M80 95H50V50L80 5z%22/></svg>";
+
+// 2. 获取 HTML 中的 link 标签
+const faviconLink = document.getElementById("dynamic-favicon");
+
+// 3. 监听页面状态变化
+// 当用户离开页面 (blur) -> 变白
+window.addEventListener('blur', () => {
+    if(faviconLink) faviconLink.href = faviconWhite;
+    // 可选：修改标题吸引用户注意
+    // document.title = "⚪ NegativeSpace"; 
+});
+
+// 当用户回到页面 (focus) -> 变黑
+window.addEventListener('focus', () => {
+    if(faviconLink) faviconLink.href = faviconBlack;
+    // 可选：恢复标题
+    // document.title = "NegativeSpace";
+});
+
+// 初始化：防止刷新时状态不一致，强制执行一次检测
+if (document.hidden) {
+    faviconLink.href = faviconWhite;
+} else {
+    faviconLink.href = faviconBlack;
 }
 
 // 启动
